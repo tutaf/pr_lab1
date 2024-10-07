@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 url = "https://maximum.md/ro/electrocasnice-mari/aspiratoare/aparate-de-spalat-pentru-auto/"
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
 response = requests.get(url, headers=headers)
 
 if response.status_code == 200:
@@ -19,11 +20,16 @@ if response.status_code == 200:
         name_tag = product.find('div', class_='product__item__title')
         name = name_tag.a.text.strip() if name_tag else None
 
-        # extract product price
+        # extract price
         price_tag = product.find('div', class_='product__item__price-current')
         price = price_tag.text.strip() if price_tag else None
 
-        if name and price:
-            print(f"Product Name: {name}, Price: {price}")
+        # extract link
+        link_tag = name_tag.find('a') if name_tag else None
+        product_link = f"https://maximum.md{link_tag['href']}" if link_tag else None
+
+        if name and price and product_link:
+            print(f"Product Name: {name}, Price: {price}, Link: {product_link}")
+
 else:
     print(f"Failed to retrieve the webpage. Status code: {response.status_code}")
