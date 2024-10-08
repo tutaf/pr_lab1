@@ -95,7 +95,7 @@ mapped_products = list(map(lambda p: {
 
 # filter by price
 min_price = 1000
-max_price = 2000
+max_price = 1600
 filtered_products = list(filter(lambda p: min_price <= p["price_mdl"] <= max_price, mapped_products))
 
 # calculate sum using reduce
@@ -108,4 +108,27 @@ result = {
     "filtered_products": filtered_products,
 }
 
-print(result)
+
+def dict_to_json(dictionary):
+    return str(dictionary).replace("'", "\"")
+
+
+def dict_to_xml(dictionary):
+    xml_str = "<result>\n"
+    xml_str += f"  <total_sum_mdl>{dictionary['total_sum_mdl']}</total_sum_mdl>\n"
+    xml_str += f"  <timestamp_utc>{dictionary['timestamp_utc']}</timestamp_utc>\n"
+    xml_str += "  <filtered_products>\n"
+    for product in dictionary['filtered_products']:
+        xml_str += "    <product>\n"
+        xml_str += f"      <name>{product['name']}</name>\n"
+        xml_str += f"      <price_mdl>{product['price_mdl']}</price_mdl>\n"
+        xml_str += f"      <price_eur>{product['price_eur']}</price_eur>\n"
+        xml_str += f"      <link>{product['link']}</link>\n"
+        xml_str += "    </product>\n"
+    xml_str += "  </filtered_products>\n"
+    xml_str += "</result>"
+    return xml_str
+
+
+print(dict_to_json(result))
+print(dict_to_xml(result))
