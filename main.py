@@ -129,6 +129,81 @@ def dict_to_xml(dictionary):
     xml_str += "</result>"
     return xml_str
 
+def custom_serialization(data):
+    lines = []
+
+    for key, value in data.items():
+        if isinstance(value, list):
+            for item in value:
+                item_parts = [f"{key}"]
+                for sub_key, sub_value in item.items():
+                    item_parts.append(f"{sub_key}:{sub_value}")
+                lines.append("|".join(item_parts))
+        elif isinstance(value, dict):
+            item_parts = [f"{key}"]
+            for sub_key, sub_value in value.items():
+                item_parts.append(f"{sub_key}:{sub_value}")
+            lines.append("|".join(item_parts))
+        else:
+            lines.append(f"{key}|{value}")
+
+    return "\n".join(lines)
+
+
+def custom_deserialization(serialized_data):
+    lines = serialized_data.split('\n')
+    data = {}
+
+    for line in lines:
+        parts = line.split('|')
+        key = parts[0]
+
+        # elements with duplicate keys are treated as elements of the same list
+        if key not in data:
+            if len(parts) > 2:  # an object with multiple key-value pairs
+                data[key] = []
+                item = {}
+                for part in parts[1:]:
+                    sub_key, value = part.split(':', 1)
+                    if value.isdigit():
+                        item[sub_key] = int(value)
+                    else:
+                        try:
+                            item[sub_key] = float(value)
+                        except ValueError:
+                            item[sub_key] = value
+                data[key].append(item)
+            else:  # this is a primitive (a single key-value pair)
+                value = parts[1]
+                if value.isdigit():
+                    data[key] = int(value)
+                else:
+                    try:
+                        data[key] = float(value)
+                    except ValueError:
+                        data[key] = value
+        else:
+            # append additional objects to the list if key is repeated
+            item = {}
+            for part in parts[1:]:
+                sub_key, value = part.split(':', 1)
+                if sub_key in ["price_mdl", "price_eur"]:
+                    value = float(value) if "." in value else int(value)
+                item[sub_key] = value
+            data[key].append(item)
+
+    return data
+
 
 print(dict_to_json(result))
 print(dict_to_xml(result))
+print(custom_serialization(result))
+
+
+aaa = """total_sum_mdl|1599
+timestamp_utc|2024-10-08T17:22:27.542182
+filtered_products|name:Aparat de spălat cu presiune mare Karcher K 2 Modular Range|price_mdl:1599|link:https://maximum.md/ro/6752966/|price_eur:83.1"""
+print(dict_to_json(custom_deserialization(aaa)))
+
+
+
