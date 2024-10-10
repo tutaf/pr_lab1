@@ -5,13 +5,15 @@ import re
 from functools import reduce
 from datetime import datetime
 
+min_price = 1000
+max_price = 2000
 
 def convert_price_to_eur(mdl):
     conversion_rate = 19.242
     return round(mdl / conversion_rate, 2)
 
 
-def parse_link_content(host, port, path):
+def retrieve_page_body(host, port, path):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # wrap the socket for SSL to handle HTTPS
@@ -49,9 +51,24 @@ def parse_link_content(host, port, path):
     return response_text
 
 
+def parse_product_weight(soup):
+    product_weight = 0
+    feature_items = soup.find_all('li', class_='feature-list-item')
+
+    for item in feature_items:
+        left_side = item.find('span', class_='feature-list-item_left')
+        if left_side and 'Greutate, kg' in left_side.get_text(strip=True):
+            right_side = item.find('span', class_='feature-list-item_right')
+            if right_side:
+                product_weight = right_side.get_text(strip=True)
+                break
+
+    return product_weight
+
+
 products_list = []
 
-productlist_content = parse_link_content(
+productlist_content = retrieve_page_body(
     "maximum.md",
     443,
     "/ro/electrocasnice-mari/aspiratoare/aparate-de-spalat-pentru-auto/"
@@ -85,10 +102,22 @@ if productlist_content:
         link_tag = name_tag.find('a') if name_tag else None
         product_link = f"https://maximum.md{link_tag['href']}" if link_tag else None
 
+        weight = 0
+        if link_tag is not None and (min_price <= price <= max_price):
+            productpage_content = retrieve_page_body(
+                'maximum.md',
+                443,
+                link_tag['href']
+            )
+            product_soup = BeautifulSoup(productpage_content, 'html.parser')
+            weight = parse_product_weight(product_soup)
+            print(weight)
+
         # validate data before appending
         if name and price is not None and product_link:
             products_list.append({
                 "name": name,
+                "weight": weight,
                 "price_mdl": price,
                 "link": product_link
             })
@@ -100,8 +129,6 @@ mapped_products = list(map(lambda p: {
 }, products_list))
 
 # filter by price
-min_price = 1000
-max_price = 1600
 filtered_products = list(filter(lambda p: min_price <= p["price_mdl"] <= max_price, mapped_products))
 
 # calculate sum using reduce
@@ -134,6 +161,7 @@ def dict_to_xml(dictionary):
     xml_str += "  </filtered_products>\n"
     xml_str += "</result>"
     return xml_str
+
 
 def custom_serialization(data):
     lines = []
@@ -193,8 +221,13 @@ def custom_deserialization(serialized_data):
             item = {}
             for part in parts[1:]:
                 sub_key, value = part.split(':', 1)
-                if sub_key in ["price_mdl", "price_eur"]:
-                    value = float(value) if "." in value else int(value)
+                try:
+                    value = int(value)
+                except ValueError:
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        value = value
                 item[sub_key] = value
             data[key].append(item)
 
@@ -204,12 +237,7 @@ def custom_deserialization(serialized_data):
 print(dict_to_json(result))
 print(dict_to_xml(result))
 print(custom_serialization(result))
-
-
-aaa = """total_sum_mdl|1599
-timestamp_utc|2024-10-08T17:22:27.542182
-filtered_products|name:Aparat de spălat cu presiune mare Karcher K 2 Modular Range|price_mdl:1599|link:https://maximum.md/ro/6752966/|price_eur:83.1"""
-print(dict_to_json(custom_deserialization(aaa)))
+print(dict_to_json(custom_deserialization(custom_serialization(result))))
 
 
 
