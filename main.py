@@ -11,49 +11,55 @@ def convert_price_to_eur(mdl):
     return round(mdl / conversion_rate, 2)
 
 
-host = "maximum.md"
-port = 443  # using https because this site doesn't support https
-path = "/ro/electrocasnice-mari/aspiratoare/aparate-de-spalat-pentru-auto/"
+def parse_link_content(host, port, path):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # wrap the socket for SSL to handle HTTPS
+    context = ssl.create_default_context()
+    ssl_client_socket = context.wrap_socket(client_socket, server_hostname=host)
 
-# wrap the socket for SSL to handle HTTPS
-context = ssl.create_default_context()
-ssl_client_socket = context.wrap_socket(client_socket, server_hostname=host)
+    ssl_client_socket.connect((host, port))
 
-ssl_client_socket.connect((host, port))
+    # send HTTPS GET request to server
+    http_request = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36\r\nConnection: close\r\n\r\n"
+    ssl_client_socket.send(http_request.encode())
 
-# send HTTPS GET request to server
-http_request = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36\r\nConnection: close\r\n\r\n"
-ssl_client_socket.send(http_request.encode())
+    # receive the response
+    response = b""
+    while True:
+        chunk = ssl_client_socket.recv(4096)  # read in chunks of 4KB
+        if not chunk:
+            break
+        response += chunk
 
-# receive the response
-response = b""
-while True:
-    chunk = ssl_client_socket.recv(4096)  # read in chunks of 4KB
-    if not chunk:
-        break
-    response += chunk
+    # close socket
+    ssl_client_socket.close()
 
-# close socket
-ssl_client_socket.close()
+    # decode response to a string
+    response_str = response.decode()
 
-# decode response to a string
-response_str = response.decode()
+    # find beginning of response body
+    body_index = response_str.find('\r\n\r\n')
+    if body_index != -1:
+        response_text = response_str[body_index + 4:]  # extract the body of the response
+    else:
+        print("Could not find the body of the response.")
+        response_text = ""
 
-# find beginning of response body
-body_index = response_str.find('\r\n\r\n')
-if body_index != -1:
-    response_text = response_str[body_index + 4:]  # extract the body of the response
-else:
-    print("Could not find the body of the response.")
-    response_text = ""
+    return response_text
+
 
 products_list = []
 
-if response_text:
+productlist_content = parse_link_content(
+    "maximum.md",
+    443,
+    "/ro/electrocasnice-mari/aspiratoare/aparate-de-spalat-pentru-auto/"
+)
+
+if productlist_content:
     # parse html using bs4 parser
-    soup = BeautifulSoup(response_text, 'html.parser')
+    soup = BeautifulSoup(productlist_content, 'html.parser')
 
     # extract product div
     products = soup.find_all('div', class_='js-content product__item')
