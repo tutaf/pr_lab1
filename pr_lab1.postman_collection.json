@@ -1,0 +1,142 @@
+{
+	"info": {
+		"_postman_id": "87f41347-94a7-453f-af89-e286b4dcb27f",
+		"name": "pr_lab1",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30256311"
+	},
+	"item": [
+		{
+			"name": "upload (xml)",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic MzAxOjIwMQ==",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "<result>\r\n  <total_sum_mdl>9085</total_sum_mdl>\r\n  <timestamp_utc>2024-10-11T08:47:19.916618</timestamp_utc>\r\n  <filtered_products>\r\n    <product>\r\n      <name>Aparat de spălat cu presiune mare Karcher K 2 Power Control</name>\r\n      <price_mdl>1899</price_mdl>\r\n      <price_eur>98.69</price_eur>\r\n      <link>https://maximum.md/ro/6179628/</link>\r\n    </product>\r\n    <product>\r\n      <name>Aparat de spălat cu presiune mare Karcher K 2 Modular Range</name>\r\n      <price_mdl>1599</price_mdl>\r\n      <price_eur>83.1</price_eur>\r\n      <link>https://maximum.md/ro/6752966/</link>\r\n    </product>\r\n    <product>\r\n      <name>Aparat de spălat cu presiune mare Xiaomi Cordless Pressure Washer</name>\r\n      <price_mdl>1999</price_mdl>\r\n      <price_eur>103.89</price_eur>\r\n      <link>https://maximum.md/ro/6874830/</link>\r\n    </product>\r\n    <product>\r\n      <name>Aparat de spălat cu presiune mare Karcher K 2 Universal</name>\r\n      <price_mdl>1639</price_mdl>\r\n      <price_eur>85.18</price_eur>\r\n      <link>https://maximum.md/ro/5922962/</link>\r\n    </product>\r\n    <product>\r\n      <name>Aparat de spălat cu presiune mare Total tools TGT11316</name>\r\n      <price_mdl>1949</price_mdl>\r\n      <price_eur>101.29</price_eur>\r\n      <link>https://maximum.md/ro/6724311/</link>\r\n    </product>\r\n  </filtered_products>\r\n</result>",
+					"options": {
+						"raw": {
+							"language": "xml"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"upload"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "Default",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{url}}/test",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"test"
+							]
+						}
+					},
+					"code": 200,
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "upload (JSON)",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic MzAxOjIwMQ==",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"total_sum_mdl\": 9085, \"timestamp_utc\": \"2024-10-11T08:47:19.916618\", \"filtered_products\": [{\"name\": \"Aparat de spălat cu presiune mare Karcher K 2 Power Control\", \"weight\": \"4\", \"price_mdl\": 1899, \"link\": \"https://maximum.md/ro/6179628/\", \"price_eur\": 98.69}, {\"name\": \"Aparat de spălat cu presiune mare Karcher K 2 Modular Range\", \"weight\": \"3.5\", \"price_mdl\": 1599, \"link\": \"https://maximum.md/ro/6752966/\", \"price_eur\": 83.1}, {\"name\": \"Aparat de spălat cu presiune mare Xiaomi Cordless Pressure Washer\", \"weight\": 0, \"price_mdl\": 1999, \"link\": \"https://maximum.md/ro/6874830/\", \"price_eur\": 103.89}, {\"name\": \"Aparat de spălat cu presiune mare Karcher K 2 Universal\", \"weight\": \"4.78\", \"price_mdl\": 1639, \"link\": \"https://maximum.md/ro/5922962/\", \"price_eur\": 85.18}, {\"name\": \"Aparat de spălat cu presiune mare Total tools TGT11316\", \"weight\": \"6\", \"price_mdl\": 1949, \"link\": \"https://maximum.md/ro/6724311/\", \"price_eur\": 101.29}]}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"upload"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "Default",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{url}}/test",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"test"
+							]
+						}
+					},
+					"code": 200,
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": ""
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "https://a5443ac5-9b28-4311-b273-12f21d237d32.mock.pstmn.io"
+		}
+	]
+}
