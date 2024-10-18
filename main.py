@@ -6,7 +6,7 @@ from functools import reduce
 from datetime import datetime
 
 min_price = 1000
-max_price = 2000
+max_price = 1700
 
 def convert_price_to_eur(mdl):
     conversion_rate = 19.242
@@ -166,72 +166,79 @@ def dict_to_xml(dictionary):
 def custom_serialization(data):
     lines = []
 
-    for key, value in data.items():
-        if isinstance(value, list):
-            for item in value:
-                item_parts = [f"{key}"]
-                for sub_key, sub_value in item.items():
-                    item_parts.append(f"{sub_key}:{sub_value}")
-                lines.append("|".join(item_parts))
-        elif isinstance(value, dict):
-            item_parts = [f"{key}"]
-            for sub_key, sub_value in value.items():
-                item_parts.append(f"{sub_key}:{sub_value}")
-            lines.append("|".join(item_parts))
+    def helper(data, indent=0):
+        prefix = '  ' * indent
+        if isinstance(data, dict):
+            lines.append(prefix + 'DICT:')
+            for key, value in data.items():
+                lines.append(prefix + '  ' + str(key) + '=')
+                helper(value, indent + 2)
+            lines.append(prefix + ':ENDDICT')
+        elif isinstance(data, list):
+            lines.append(prefix + 'LIST:')
+            for item in data:
+                helper(item, indent + 1)
+            lines.append(prefix + ':ENDLIST')
+        elif isinstance(data, str):
+            lines.append(prefix + 'STR:' + data)
+        elif isinstance(data, int):
+            lines.append(prefix + 'INT:' + str(data))
+        elif isinstance(data, float):
+            lines.append(prefix + 'FLOAT:' + str(data))
         else:
-            lines.append(f"{key}|{value}")
+            raise ValueError('Unsupported data type: {}'.format(type(data)))
+    helper(data)
+    return '\n'.join(lines)
 
-    return "\n".join(lines)
 
+def custom_deserialization(s):
+    lines = s.split('\n')
+    pos = [0]
 
-def custom_deserialization(serialized_data):
-    lines = serialized_data.split('\n')
-    data = {}
-
-    for line in lines:
-        parts = line.split('|')
-        key = parts[0]
-
-        # elements with duplicate keys are treated as elements of the same list
-        if key not in data:
-            if len(parts) > 2:  # an object with multiple key-value pairs
-                data[key] = []
-                item = {}
-                for part in parts[1:]:
-                    sub_key, value = part.split(':', 1)
-                    if value.isdigit():
-                        item[sub_key] = int(value)
-                    else:
-                        try:
-                            item[sub_key] = float(value)
-                        except ValueError:
-                            item[sub_key] = value
-                data[key].append(item)
-            else:  # this is a primitive (a single key-value pair)
-                value = parts[1]
-                if value.isdigit():
-                    data[key] = int(value)
+    def process():
+        if pos[0] >= len(lines):
+            raise ValueError('unexpected end of input')
+        line = lines[pos[0]].strip()
+        pos[0] += 1
+        if line == 'DICT:':
+            result = {}
+            while True:
+                if pos[0] >= len(lines):
+                    raise ValueError('expected :ENDDICT')
+                line = lines[pos[0]].strip()
+                if line == ':ENDDICT':
+                    pos[0] += 1
+                    break
+                if '=' in line: # it's a key/value pair
+                    key = line.rstrip('=').strip()
+                    pos[0] += 1   # move to the value
+                    value = process()
+                    result[key] = value
                 else:
-                    try:
-                        data[key] = float(value)
-                    except ValueError:
-                        data[key] = value
+                    raise ValueError('invalid dictionary entry: ' + line)
+            return result
+        elif line == 'LIST:':
+            result = []
+            while True:
+                if pos[0] >= len(lines):
+                    raise ValueError('expected :ENDLIST')
+                line = lines[pos[0]].strip()
+                if line == ':ENDLIST':
+                    pos[0] += 1
+                    break
+                # non incrementing pos[0] here - process() will do it
+                value = process()
+                result.append(value)
+            return result
+        elif line.startswith('STR:'):
+            return line[4:]
+        elif line.startswith('INT:'):
+            return int(line[4:])
+        elif line.startswith('FLOAT:'):
+            return float(line[6:])
         else:
-            # append additional objects to the list if key is repeated
-            item = {}
-            for part in parts[1:]:
-                sub_key, value = part.split(':', 1)
-                try:
-                    value = int(value)
-                except ValueError:
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        value = value
-                item[sub_key] = value
-            data[key].append(item)
-
-    return data
+            raise ValueError('unknown type or invalid line:  ' + line)
+    return process()
 
 
 print(dict_to_json(result))
