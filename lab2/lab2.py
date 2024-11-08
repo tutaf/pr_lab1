@@ -1,17 +1,21 @@
 import os
+import threading
+import asyncio
+import json
+from datetime import datetime
 
 from dotenv import load_dotenv
 from flask import Flask, Blueprint, request
 from flask_sqlalchemy import SQLAlchemy
-import json
-from datetime import datetime
+from websockets import serve
 
 load_dotenv()
 
 db = SQLAlchemy()
 
-queries = Blueprint('queries',__name__)
+queries = Blueprint('queries', __name__)
 
+chat_rooms = {}
 
 class Product(db.Model):
     __tablename__ = 'products'
@@ -99,7 +103,6 @@ def delete_product(product_id):
     return {"message": "Product deleted successfully"}, 200
 
 
-# route to handle form-data uploads
 @queries.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -123,7 +126,82 @@ def upload_file():
         return {"message": "only JSON files are allowed!!11!"}, 400
 
 
+# ----------------------------------------
+# chat room functionality
+# ----------------------------------------
+async def chat_handler(websocket):
+    room_name = None
+
+    try:
+        async for message in websocket:
+            data = json.loads(message)
+            action = data.get("action")
+
+            if action == "join":
+                room_name = data.get("room")
+                if room_name in chat_rooms:
+                    chat_rooms[room_name].append(websocket)
+                    await websocket.send(json.dumps({"message": f"Joined room '{room_name}'"}))
+                    print(f"User joined room {room_name}")
+                else:
+                    room_name = None
+                    await websocket.send(json.dumps({"message": "Room does not exist"}))
+
+            elif action == "create" and not room_name:
+                new_room = data.get('room')
+                if chat_rooms.get(new_room) is not None:
+                    return await websocket.send(
+                        json.dumps({"message": f"Room '{new_room}' already created"}, default=str))
+                chat_rooms[new_room] = []
+                await websocket.send(json.dumps({"message": f"Room '{new_room}' created"}, default=str))
+
+            elif action == "rooms":
+                room_list = list(chat_rooms.keys())
+                await websocket.send(json.dumps({"rooms": room_list}))
+
+            elif action == "message" and room_name:
+                message_text = data.get("message")
+                if message_text:
+                    await broadcast(room_name, message_text, websocket)
+
+            elif action == "leave" and room_name:
+                await leave_room(room_name, websocket)
+                room_name = None
+                await websocket.send(json.dumps({"message": "Left the room"}))
+
+    finally:
+        if room_name:
+            await leave_room(room_name, websocket)
+
+
+async def broadcast(room, message, sender):
+    if room in chat_rooms:
+        message_data = json.dumps({"message": message})
+        for user in chat_rooms[room]:
+            if user != sender:
+                await user.send(message_data)
+
+
+async def leave_room(room, websocket):
+    if room in chat_rooms:
+        chat_rooms[room].remove(websocket)
+        print(f"User left room {room}")
+
+
+async def start_websocket_server():
+    async with serve(chat_handler, "0.0.0.0", 5001):
+        await asyncio.Future()
+
+
+def start_websocket_server_thread():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(start_websocket_server())
+
+
 app = create_app()
 
 if __name__ == "__main__":
+    websocket_thread = threading.Thread(target=start_websocket_server_thread)
+    websocket_thread.start()
     app.run("0.0.0.0", port=5000, debug=True)

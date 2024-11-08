@@ -18,5 +18,6 @@ ENV PYTHONUNBUFFERED 1
 
 # expose the port for the flask app
 EXPOSE 5000
+EXPOSE 5001
 
-CMD ["./wait-for-it.sh", "db:5432", "--", "flask", "run", "--host=0.0.0.0"]
+CMD ["./wait-for-it.sh", "db:5432", "--", "python", "lab2.py"]
