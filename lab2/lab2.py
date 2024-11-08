@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, Blueprint, request
 from flask_sqlalchemy import SQLAlchemy
-
+import json
 from datetime import datetime
 
 load_dotenv()
@@ -97,6 +97,30 @@ def delete_product(product_id):
     db.session.delete(product)
     db.session.commit()
     return {"message": "Product deleted successfully"}, 200
+
+
+# route to handle form-data uploads
+@queries.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return {"message": "no file part in the request"}, 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return {"message": "no file selected for uploading"}, 400
+
+    if file and file.filename.endswith('.json'):
+        file_path = os.path.join('/tmp', file.filename)
+        file.save(file_path)
+
+        with open(file_path, 'r') as f:
+            try:
+                data = json.load(f)
+                return {"message": "file uploaded and processed successfully", "data": data}, 201
+            except json.JSONDecodeError:
+                return {"message": "Invalid JSON file"}, 400
+    else:
+        return {"message": "only JSON files are allowed!!11!"}, 400
 
 
 app = create_app()
